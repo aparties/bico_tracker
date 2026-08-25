@@ -15,60 +15,68 @@ export default function VoiceInput({ onTaskCreated }: VoiceInputProps) {
   
   const recognitionRef = useRef<any>(null);
 
-  useEffect(() => {
-    // Inicializar SpeechRecognition en el lado del cliente
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      
-      if (SpeechRecognition) {
-        const rec = new SpeechRecognition();
-        rec.continuous = false;
-        rec.interimResults = false;
-        rec.lang = 'es-ES';
+  const startListening = () => {
+    if (typeof window === 'undefined') return;
 
-        rec.onstart = () => {
-          setIsListening(true);
-          setError(null);
-        };
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-        rec.onend = () => {
-          setIsListening(false);
-        };
-
-        rec.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error);
-          setIsListening(false);
-          if (event.error === 'not-allowed') {
-            setError('Permiso de micrófono denegado. Habilítalo en tu navegador.');
-          } else {
-            setError('Error al capturar audio. Intenta de nuevo.');
-          }
-        };
-
-        rec.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          setText(transcript);
-          // Opcional: auto-enviar al recibir la transcripción
-          handleParseTask(transcript);
-        };
-
-        recognitionRef.current = rec;
-      }
-    }
-  }, []);
-
-  const toggleListening = () => {
-    if (!recognitionRef.current) {
-      setError('Tu navegador no soporta Speech Recognition (Recomendado: Chrome o Edge).');
+    if (!SpeechRecognition) {
+      setError('Tu navegador o dispositivo no soporta el dictado por voz.');
       return;
     }
 
+    try {
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'es-ES';
+
+      rec.onstart = () => {
+        setIsListening(true);
+        setError(null);
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+      };
+
+      rec.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        if (event.error === 'not-allowed') {
+          setError('Permiso de micrófono denegado. Habilítalo en los ajustes de tu iPhone (Safari/Chrome y Privacidad).');
+        } else if (event.error === 'audio-capture') {
+          setError('No se pudo acceder al micrófono. Asegúrate de que no esté en uso por otra app.');
+        } else if (event.error === 'service-not-allowed') {
+          setError('Servicio de dictado no disponible. Activa "Dictado" en Ajustes -> General -> Teclado de tu iPhone.');
+        } else {
+          setError(`Error al capturar audio (${event.error}). Intenta de nuevo.`);
+        }
+      };
+
+      rec.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setText(transcript);
+        handleParseTask(transcript);
+      };
+
+      recognitionRef.current = rec;
+      rec.start();
+    } catch (e: any) {
+      console.error('Error starting speech recognition:', e);
+      setError('Error al iniciar la grabación de voz.');
+    }
+  };
+
+  const toggleListening = () => {
     if (isListening) {
-      recognitionRef.current.stop();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
     } else {
-      setError(null);
-      recognitionRef.current.start();
+      startListening();
     }
   };
 
