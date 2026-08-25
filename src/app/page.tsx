@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Kanban, Calendar as CalendarIcon, Sparkles, LayoutGrid } from 'lucide-react';
+import { Calendar as CalendarIcon, Sparkles, LayoutGrid } from 'lucide-react';
 import VoiceInput from '@/components/VoiceInput';
 import TaskBoard from '@/components/TaskBoard';
 import TaskCalendar from '@/components/TaskCalendar';
@@ -10,6 +10,20 @@ import TaskCalendar from '@/components/TaskCalendar';
 export default function Home() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<'kanban' | 'calendar'>('kanban');
+  const [mounted, setMounted] = useState(false);
+  const [formattedDate, setFormattedDate] = useState('');
+
+  useEffect(() => {
+    setMounted(true);
+    // Formatear fecha para Perú (GMT-5)
+    const dateString = new Date().toLocaleDateString('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    setFormattedDate(dateString.charAt(0).toUpperCase() + dateString.slice(1));
+  }, []);
 
   const handleTaskCreated = () => {
     // Forzar recarga del listado
@@ -20,16 +34,30 @@ export default function Home() {
     <div className="flex-1 min-h-screen bg-[#0b241c] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/10 via-[#0b241c] to-[#0b241c]">
       {/* Header */}
       <header className="max-w-7xl mx-auto px-6 pt-12 pb-6 flex flex-col items-center text-center">
-        <div className="flex items-center gap-2.5 bg-[#143028] border border-[#1d4034] rounded-full px-5 py-2 mb-6">
-          <Kanban className="w-5 h-5 text-[#57cc99]" />
-          <span className="text-[#57cc99] font-bold text-xs uppercase tracking-wider">
-            Bicode Control System
-          </span>
+        {/* Logo y Bicode Control Badge */}
+        <div className="flex items-center gap-3 mb-6 bg-[#143028]/80 border border-[#1d4034] rounded-full pl-3 pr-6 py-2 shadow-[0_0_15px_rgba(87,204,153,0.05)]">
+          <img src="/logo.png" alt="Bicode Control Logo" className="w-8 h-8 rounded-full object-cover border border-[#1d4034]" />
+          <div className="flex flex-col items-start leading-none text-left">
+            <span className="text-white font-black text-sm tracking-wide">
+              Bicode Control
+            </span>
+            <span className="text-[#57cc99] text-[9px] font-black uppercase tracking-widest mt-0.5">
+              System
+            </span>
+          </div>
         </div>
         
         <h1 className="text-white text-3xl md:text-5xl font-black tracking-tight mb-4">
           Bicode Tracker
         </h1>
+
+        {/* Fecha de hoy (Perú, GMT-5) */}
+        {mounted && (
+          <div className="text-xs text-[#80ed99] bg-[#143028] border border-[#1d4034] rounded-full px-4.5 py-1.5 font-bold mb-5 flex items-center gap-2 shadow-[0_0_12px_rgba(87,204,153,0.03)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#57cc99] animate-pulse" />
+            Hoy: {formattedDate} (GMT-5)
+          </div>
+        )}
         
         <p className="text-[#a8b5b0] text-sm md:text-base max-w-xl leading-relaxed flex items-center justify-center gap-1.5 mb-6">
           <Sparkles className="w-4 h-4 text-[#80ed99] flex-shrink-0" />
