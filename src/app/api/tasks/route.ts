@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/prisma/db';
+import { createActivityLog } from '@/lib/activityLog';
 
 const createTaskSchema = z.object({
   title: z.string().min(1, 'El título es obligatorio'),
@@ -86,6 +87,13 @@ export async function POST(req: NextRequest) {
       endDate: finalEndDate,
       rawVoiceInput: data.rawVoiceInput || null,
       tags: data.tags || [],
+    });
+
+    // Registrar historial de actividad
+    await createActivityLog({
+      taskId: task.id,
+      action: 'CREATE',
+      newValues: task,
     });
 
     return NextResponse.json(task, { status: 201 });

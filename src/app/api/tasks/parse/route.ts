@@ -3,6 +3,7 @@ import { generateObject } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
 import { db } from '@/prisma/db';
+import { createActivityLog } from '@/lib/activityLog';
 
 export async function POST(req: NextRequest) {
   try {
@@ -115,6 +116,13 @@ Instrucciones críticas:
       endDate: finalEndDate,
       rawVoiceInput: text,
       tags: [],
+    });
+
+    // Registrar historial de actividad
+    await createActivityLog({
+      taskId: task.id,
+      action: 'CREATE',
+      newValues: task,
     });
 
     return NextResponse.json({

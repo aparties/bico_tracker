@@ -4,6 +4,10 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "task_activity_logs": {
+      "model": "TaskActivityLog",
+      "namespace": "public"
+    },
     "tasks": {
       "model": "Task",
       "namespace": "public"
@@ -157,7 +161,23 @@
                 }
               }
             },
-            "relations": {},
+            "relations": {
+              "activityLogs": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "taskId"
+                  ]
+                },
+                "to": {
+                  "model": "TaskActivityLog",
+                  "namespace": "public"
+                }
+              }
+            },
             "storage": {
               "fields": {
                 "createdAt": {
@@ -200,6 +220,93 @@
               "namespaceId": "public",
               "table": "tasks"
             }
+          },
+          "TaskActivityLog": {
+            "fields": {
+              "action": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "newValues": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "oldValues": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "taskId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "task": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "taskId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Task",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "action": {
+                  "column": "action"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "newValues": {
+                  "column": "new_values"
+                },
+                "oldValues": {
+                  "column": "old_values"
+                },
+                "taskId": {
+                  "column": "task_id"
+                }
+              },
+              "namespaceId": "public",
+              "table": "task_activity_logs"
+            }
           }
         }
       }
@@ -210,6 +317,79 @@
       "public": {
         "entries": {
           "table": {
+            "task_activity_logs": {
+              "columns": {
+                "action": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "new_values": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
+                  "nullable": true
+                },
+                "old_values": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
+                  "nullable": true
+                },
+                "task_id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "task_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "task_activity_logs"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tasks"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "task_id"
+                  ],
+                  "name": "task_activity_logs_task_id_idx_5d5ac774",
+                  "prefix": "task_activity_logs_task_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "tasks": {
               "checks": [
                 {
@@ -379,12 +559,23 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ec95d67950e4bc29a9dc039a10241aa9da1abc834bf2c809ee01236d437dc52a"
+    "storageHash": "7153c29d9f92ccca19f81b4dcd59966ff817916508990b3ef9c2544a6daf49bb"
   },
   "execution": {
-    "executionHash": "35ca9cfda9f2597f8c2d29a3fc6e822ef94eb182c6d6862530c1c403118920f3",
+    "executionHash": "d8cf005252d006b56f776aa413c3243798a38b108d84d878e482b7fb07e315b2",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "task_activity_logs"
+          }
+        },
         {
           "onCreate": {
             "id": "uuidv4",

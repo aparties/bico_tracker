@@ -28,8 +28,23 @@ model Task {
   createdAt     TimestamptzString @default(now()) @map("created_at")
   updatedAt     temporal.updatedAtString() @map("updated_at")
 
+  activityLogs  TaskActivityLog[]
+
   @@index([status])
   @@index([dueDate])
   @@index([createdAt])
   @@map("tasks")
+}
+
+model TaskActivityLog {
+  id        String            @id @default(uuid())
+  taskId    String            @map("task_id")
+  action    String            // "CREATE" | "STATUS_CHANGE" | "DATE_UPDATE" | "UPDATE"
+  oldValues Json?             @map("old_values")
+  newValues Json?             @map("new_values")
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  task      Task              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_activity_logs")
 }

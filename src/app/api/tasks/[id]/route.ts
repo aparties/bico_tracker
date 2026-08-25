@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/prisma/db';
+import { createActivityLog, LogAction } from '@/lib/activityLog';
 
 const updateTaskSchema = z.object({
   title: z.string().min(1).optional(),
@@ -17,6 +18,36 @@ const updateTaskSchema = z.object({
 type RouteParams = {
   params: Promise<{ id: string }>;
 };
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+    const task = await db.orm.public.Task.where({ id }).first();
+    if (!task) {
+      return NextResponse.json(
+        { error: 'La tarea no existe.' },
+        { status: 404 }
+      );
+    }
+
+    // Obtener los logs ordenados por fecha descendente
+    const logs = await db.orm.public.TaskActivityLog
+      .where({ taskId: id })
+      .orderBy(m => m.createdAt.desc())
+      .all();
+
+    return NextResponse.json({
+      ...task,
+      activityLogs: logs,
+    });
+  } catch (error: any) {
+    console.error('Error fetching task details:', error);
+    return NextResponse.json(
+      { error: 'Error al obtener la tarea', details: error.message },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
@@ -81,6 +112,36 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     // Actualizar la tarea filtrando por ID
     const updated = await db.orm.public.Task.where({ id }).update(updateData);
+
+    // Guardar log de actividad
+    let logAction: LogAction = 'UPDATE';
+    const changedFields: string[] = [];
+    const oldValues: any = {};
+    const newValues: any = {};
+
+    for (const key of Object.keys(updateData)) {
+      const typedKey = key as keyof typeof updateData;
+      if (updateData[typedKey] !== undefined && updateData[typedKey] !== (existingTask as any)[typedKey]) {
+        changedFields.push(key);
+        oldValues[key] = (existingTask as any)[typedKey];
+        newValues[key] = (updated as any)[typedKey];
+      }
+    }
+
+    if (changedFields.includes('status')) {
+      logAction = 'STATUS_CHANGE';
+    } else if (changedFields.includes('startDate') || changedFields.includes('dueDate') || changedFields.includes('endDate')) {
+      logAction = 'DATE_UPDATE';
+    }
+
+    if (changedFields.length > 0) {
+      await createActivityLog({
+        taskId: id,
+        action: logAction,
+        oldValues,
+        newValues,
+      });
+    }
 
     return NextResponse.json(updated);
   } catch (error: any) {
