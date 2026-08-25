@@ -1,21 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   ChevronLeft, 
   ChevronRight, 
   Calendar as CalendarIcon, 
-  Clock, 
-  Tag, 
-  CheckCircle2, 
-  AlertCircle, 
-  Play, 
-  Trash2, 
-  X,
-  History,
-  Activity
+  Clock
 } from 'lucide-react';
+import TaskModal from './TaskModal';
 
 type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED';
 type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
@@ -61,47 +54,7 @@ export default function TaskCalendar() {
     },
   });
 
-  // Fetch de detalles de la tarea seleccionada (con logs de actividad)
-  const { data: taskDetails, isLoading: isLoadingDetails } = useQuery<Task>({
-    queryKey: ['task-details', selectedTask?.id],
-    queryFn: async () => {
-      if (!selectedTask?.id) return null as any;
-      const res = await fetch(`/api/tasks/${selectedTask.id}`);
-      if (!res.ok) throw new Error('Error al cargar detalle de tarea');
-      return res.json();
-    },
-    enabled: !!selectedTask?.id,
-  });
-
-  // Mutación para actualizar estado
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: TaskStatus }) => {
-      const res = await fetch(`/api/tasks/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) throw new Error('Error al actualizar estado');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task-details', selectedTask?.id] });
-    },
-  });
-
-  // Mutación para eliminar tarea
-  const deleteTaskMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Error al eliminar tarea');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      setSelectedTask(null);
-    },
-  });
+  // Note: Unused queries/mutations removed as they are now encapsulated in the TaskModal component.
 
   // Helpers de navegación
   const handlePrev = () => {
@@ -403,85 +356,7 @@ export default function TaskCalendar() {
 
   // --- RENDERING DETAIL MODAL AND LOG TIMELINE ---
 
-  const renderLogTimeline = () => {
-    if (isLoadingDetails) {
-      return (
-        <div className="flex items-center justify-center py-6 text-xs text-[#a8b5b0] gap-2">
-          <LoaderSpinner className="animate-spin" /> Cargando historial...
-        </div>
-      );
-    }
-
-    const logs = taskDetails?.activityLogs || [];
-
-    if (logs.length === 0) {
-      return (
-        <div className="text-[#a8b5b0] text-xs italic py-4 text-center">
-          No hay registros de actividad guardados.
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[1px] before:bg-[#1d4034]">
-        {logs.map((log) => {
-          const logDate = new Date(log.createdAt);
-          const timeString = logDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-          
-          let actionLabel = 'Modificación';
-          let actionColor = 'bg-[#1d4034] border-[#57cc99]/30 text-[#80ed99]';
-          let detailsText = '';
-
-          // Intentar parsear los valores guardados
-          let oldVals: any = null;
-          let newVals: any = null;
-          try {
-            oldVals = typeof log.oldValues === 'string' ? JSON.parse(log.oldValues) : log.oldValues;
-            newVals = typeof log.newValues === 'string' ? JSON.parse(log.newValues) : log.newValues;
-          } catch(e) {}
-
-          if (log.action === 'CREATE') {
-            actionLabel = 'Tarea Creada';
-            actionColor = 'bg-emerald-950 border-emerald-500/20 text-[#80ed99]';
-            detailsText = 'La tarea fue agregada e incorporada al sistema.';
-          } else if (log.action === 'STATUS_CHANGE') {
-            actionLabel = 'Cambio de Estado';
-            actionColor = 'bg-blue-950 border-blue-500/20 text-blue-300';
-            if (oldVals?.status && newVals?.status) {
-              detailsText = `Estado modificado de "${getStatusLabel(oldVals.status)}" a "${getStatusLabel(newVals.status)}".`;
-            }
-          } else if (log.action === 'DATE_UPDATE') {
-            actionLabel = 'Fechas Modificadas';
-            actionColor = 'bg-orange-950 border-orange-500/20 text-orange-300';
-            const updates: string[] = [];
-            if (newVals?.startDate) updates.push('Inicio');
-            if (newVals?.dueDate) updates.push('Límite');
-            if (newVals?.endDate) updates.push('Témino');
-            detailsText = `Parámetros temporales actualizados: ${updates.join(', ')}.`;
-          }
-
-          return (
-            <div key={log.id} className="relative pl-7 text-left">
-              {/* Dot del log */}
-              <div className="absolute left-[7.5px] top-1.5 w-2 h-2 rounded-full bg-[#57cc99] ring-4 ring-[#143028]" />
-              
-              <div className="bg-[#0b241c] border border-[#1d4034] rounded-xl p-3">
-                <div className="flex justify-between items-center gap-2 flex-wrap mb-1">
-                  <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${actionColor}`}>
-                    {actionLabel}
-                  </span>
-                  <span className="text-[10px] text-[#a8b5b0]">
-                    {timeString}
-                  </span>
-                </div>
-                <p className="text-xs text-white">{detailsText || 'Detalles de actualización registrados.'}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+  // renderLogTimeline and unused priority styling helpers removed as they are now inside TaskModal
 
   return (
     <div className="w-full px-6">
@@ -544,129 +419,11 @@ export default function TaskCalendar() {
 
       {/* --- MODAL DETALLE DE TAREA --- */}
       {selectedTask && (
-        <div className="fixed inset-0 bg-[#0b241c]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#143028] border border-[#1d4034] w-full max-w-lg rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-            {/* Modal Header */}
-            <div className="flex justify-between items-start p-6 border-b border-[#1d4034]">
-              <div>
-                <span className={`text-[10px] font-black tracking-widest px-3 py-1 rounded-full uppercase border ${getPriorityStyle(selectedTask.priority)}`}>
-                  {selectedTask.priority}
-                </span>
-                <h3 className="text-white font-black text-xl mt-3">{selectedTask.title}</h3>
-              </div>
-              <button 
-                onClick={() => setSelectedTask(null)}
-                className="text-[#a8b5b0] hover:text-white p-1 rounded-full hover:bg-[#0b241c] transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1">
-              {/* Descripción */}
-              {selectedTask.description && (
-                <div>
-                  <h4 className="text-[#80ed99] text-xs font-bold uppercase tracking-wider mb-2">Descripción</h4>
-                  <p className="text-[#a8b5b0] text-sm bg-[#0b241c] border border-[#1d4034] p-4 rounded-2xl whitespace-pre-wrap">
-                    {selectedTask.description}
-                  </p>
-                </div>
-              )}
-
-              {/* Fechas */}
-              <div>
-                <h4 className="text-[#80ed99] text-xs font-bold uppercase tracking-wider mb-2.5">Planificación Temporal</h4>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-[#0b241c] border border-[#1d4034] rounded-2xl p-3 flex flex-col">
-                    <span className="text-[#a8b5b0] mb-0.5">Inicio</span>
-                    <span className="text-white font-bold">
-                      {selectedTask.startDate ? new Date(selectedTask.startDate).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'No definida'}
-                    </span>
-                  </div>
-                  <div className="bg-[#0b241c] border border-[#1d4034] rounded-2xl p-3 flex flex-col">
-                    <span className="text-[#a8b5b0] mb-0.5">Límite (Due Date)</span>
-                    <span className="text-white font-bold">
-                      {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'No definida'}
-                    </span>
-                  </div>
-                  {selectedTask.endDate && (
-                    <div className="bg-[#0b241c] border border-[#1d4034] rounded-2xl p-3 flex flex-col col-span-2">
-                      <span className="text-[#a8b5b0] mb-0.5">Cierre Real/Estimado</span>
-                      <span className="text-white font-bold">
-                        {new Date(selectedTask.endDate).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Dictado Original */}
-              {selectedTask.rawVoiceInput && (
-                <div>
-                  <h4 className="text-[#80ed99] text-xs font-bold uppercase tracking-wider mb-2">Dictado Original (NLP)</h4>
-                  <p className="text-[#a8b5b0] text-xs italic bg-[#0b241c]/40 border border-[#1d4034]/40 p-3.5 rounded-2xl">
-                    "{selectedTask.rawVoiceInput}"
-                  </p>
-                </div>
-              )}
-
-              {/* Historial de Trazabilidad */}
-              <div>
-                <h4 className="text-[#80ed99] text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <History className="w-4 h-4" />
-                  Historial de Cambios (Logs)
-                </h4>
-                {renderLogTimeline()}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-6 border-t border-[#1d4034] bg-[#0b241c]/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-              {/* Cambiar Estado */}
-              <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                <span className="text-[#a8b5b0] text-xs font-medium">Estado:</span>
-                <select
-                  value={selectedTask.status}
-                  onChange={(e) => {
-                    const nextStatus = e.target.value as TaskStatus;
-                    updateStatusMutation.mutate({ id: selectedTask.id, status: nextStatus });
-                    setSelectedTask(prev => prev ? { ...prev, status: nextStatus } : null);
-                  }}
-                  className="bg-[#081a14] border border-[#1d4034] text-white text-xs font-bold rounded-full px-4 py-2 focus:outline-none focus:border-[#57cc99]"
-                >
-                  <option value="PENDING">Pendiente</option>
-                  <option value="IN_PROGRESS">En Curso</option>
-                  <option value="COMPLETED">Terminado</option>
-                  <option value="ARCHIVED">Archivado</option>
-                </select>
-              </div>
-
-              {/* Eliminar Tarea */}
-              <button
-                onClick={() => {
-                  if (confirm('¿Estás seguro de que deseas eliminar esta tarea permanentemente?')) {
-                    deleteTaskMutation.mutate(selectedTask.id);
-                  }
-                }}
-                className="w-full sm:w-auto px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-xs rounded-full border border-red-500/20 hover:border-red-500/30 flex items-center justify-center gap-1.5 transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Eliminar Tarea
-              </button>
-            </div>
-          </div>
-        </div>
+        <TaskModal 
+          task={selectedTask as any} 
+          onClose={() => setSelectedTask(null)} 
+        />
       )}
     </div>
-  );
-}
-
-function LoaderSpinner({ className }: { className?: string }) {
-  return (
-    <svg className={`animate-spin h-4 w-4 text-[#57cc99] ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
   );
 }

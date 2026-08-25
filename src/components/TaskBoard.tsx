@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Play, 
@@ -14,6 +14,7 @@ import {
   Loader2,
   Mic
 } from 'lucide-react';
+import TaskModal from './TaskModal';
 
 type Task = {
   id: string;
@@ -44,6 +45,7 @@ const formatFriendlyDate = (dateStr?: string | null) => {
 
 export default function TaskBoard() {
   const queryClient = useQueryClient();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Fetch de tareas
   const { data: tasks = [], isLoading, error } = useQuery<Task[]>({
@@ -143,7 +145,8 @@ export default function TaskBoard() {
             taskList.map((task) => (
               <div 
                 key={task.id} 
-                className={`bg-[#143028] border rounded-[30px] p-5 hover:shadow-xl transition-all group ${
+                onClick={() => setSelectedTask(task)}
+                className={`bg-[#143028] border rounded-[30px] p-5 hover:shadow-xl cursor-pointer hover:bg-[#183a30] hover:scale-[1.01] transition-all group ${
                   task.priority === 'URGENT' 
                     ? 'border-red-500/40 hover:border-red-500/70 shadow-[0_0_12px_rgba(239,68,68,0.05)]' 
                     : 'border-[#1d4034] hover:border-[#57cc99]/30'
@@ -184,14 +187,14 @@ export default function TaskBoard() {
                 <div className="flex flex-col gap-1.5 mb-4 text-[10px] md:text-xs text-[#a8b5b0]/70 border-t border-[#1d4034] pt-3">
                   {task.startDate && (
                     <div className="flex items-center gap-1.5">
-                      <Play className="w-3 h-3 text-[#80ed99] rotate-0" />
+                      <Play className="w-3 h-3 text-sky-400 rotate-0" />
                       <span>Inicio: {formatFriendlyDate(task.startDate)}</span>
                     </div>
                   )}
                   {task.dueDate && (
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-[#57cc99]" />
-                      <span className="font-medium text-[#57cc99]">Límite: {formatFriendlyDate(task.dueDate)}</span>
+                      <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                      <span className="font-medium text-amber-400">Límite: {formatFriendlyDate(task.dueDate)}</span>
                     </div>
                   )}
                   {task.endDate && (
@@ -205,7 +208,7 @@ export default function TaskBoard() {
                 {/* Transcripción original */}
                 {task.rawVoiceInput && (
                   <div className="flex items-start gap-1.5 mt-3 text-[10px] text-[#a8b5b0]/40 italic border-t border-[#1d4034]/10 pt-2.5">
-                    <Mic className="w-3 h-3 text-[#57cc99]/30 mt-0.5 flex-shrink-0" />
+                    <Mic className="w-3 h-3 text-indigo-400/40 mt-0.5 flex-shrink-0" />
                     <span className="line-clamp-2" title={task.rawVoiceInput}>
                       "{task.rawVoiceInput}"
                     </span>
@@ -216,9 +219,14 @@ export default function TaskBoard() {
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#1d4034]/30">
                   {/* Eliminar */}
                   <button
-                    onClick={() => deleteTaskMutation.mutate(task.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('¿Estás seguro de que deseas eliminar esta tarea permanentemente?')) {
+                        deleteTaskMutation.mutate(task.id);
+                      }
+                    }}
                     disabled={deleteTaskMutation.isPending}
-                    className="p-2 text-[#a8b5b0]/50 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-all"
+                    className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-all"
                     title="Eliminar tarea"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -228,9 +236,12 @@ export default function TaskBoard() {
                   <div className="flex items-center gap-1">
                     {columnStatus !== 'PENDING' && (
                       <button
-                        onClick={() => updateStatusMutation.mutate({ id: task.id, status: 'PENDING' })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateStatusMutation.mutate({ id: task.id, status: 'PENDING' });
+                        }}
                         disabled={updateStatusMutation.isPending}
-                        className="p-1.5 bg-[#081a14] hover:bg-[#57cc99]/10 text-[#a8b5b0] hover:text-[#57cc99] rounded-full border border-[#1d4034] transition-all"
+                        className="p-1.5 bg-[#081a14] hover:bg-amber-500/10 text-zinc-400 hover:text-amber-400 rounded-full border border-[#1d4034] hover:border-amber-500/20 transition-all"
                         title="Mover a Pendientes"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
@@ -239,23 +250,29 @@ export default function TaskBoard() {
                     
                     {columnStatus === 'PENDING' && (
                       <button
-                        onClick={() => updateStatusMutation.mutate({ id: task.id, status: 'IN_PROGRESS' })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateStatusMutation.mutate({ id: task.id, status: 'IN_PROGRESS' });
+                        }}
                         disabled={updateStatusMutation.isPending}
-                        className="p-2 bg-[#57cc99]/10 hover:bg-[#57cc99]/20 text-[#57cc99] rounded-full border border-[#57cc99]/20 transition-all flex items-center gap-1 text-[10px] font-bold"
+                        className="p-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 rounded-full border border-sky-500/20 hover:border-sky-500/30 transition-all flex items-center gap-1 text-[10px] font-bold"
                         title="Iniciar tarea"
                       >
-                        <Play className="w-3.5 h-3.5 fill-[#57cc99]" /> Iniciar
+                        <Play className="w-3.5 h-3.5 fill-sky-400 text-sky-400" /> Iniciar
                       </button>
                     )}
 
                     {columnStatus === 'IN_PROGRESS' && (
                       <button
-                        onClick={() => updateStatusMutation.mutate({ id: task.id, status: 'COMPLETED' })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateStatusMutation.mutate({ id: task.id, status: 'COMPLETED' });
+                        }}
                         disabled={updateStatusMutation.isPending}
-                        className="p-2 bg-[#80ed99]/10 hover:bg-[#80ed99]/20 text-[#80ed99] rounded-full border border-[#80ed99]/20 transition-all flex items-center gap-1 text-[10px] font-bold"
+                        className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/20 hover:border-emerald-500/30 transition-all flex items-center gap-1 text-[10px] font-bold"
                         title="Completar tarea"
                       >
-                        <Check className="w-3.5 h-3.5" /> Terminar
+                        <Check className="w-3.5 h-3.5 text-emerald-400" /> Terminar
                       </button>
                     )}
                   </div>
@@ -270,9 +287,15 @@ export default function TaskBoard() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto px-4 pb-16">
-      {renderColumn('Pendientes', pendingTasks, 'PENDING', 'bg-[#a8b5b0]', 'border-slate-500')}
-      {renderColumn('En Curso', inProgressTasks, 'IN_PROGRESS', 'bg-[#57cc99]', 'border-[#57cc99]')}
-      {renderColumn('Terminadas', completedTasks, 'COMPLETED', 'bg-[#80ed99]', 'border-[#80ed99]')}
+      {renderColumn('Pendientes', pendingTasks, 'PENDING', 'bg-amber-500', 'border-amber-500')}
+      {renderColumn('En Curso', inProgressTasks, 'IN_PROGRESS', 'bg-sky-400', 'border-sky-400')}
+      {renderColumn('Terminadas', completedTasks, 'COMPLETED', 'bg-emerald-500', 'border-emerald-500')}
+      {selectedTask && (
+        <TaskModal 
+          task={selectedTask as any} 
+          onClose={() => setSelectedTask(null)} 
+        />
+      )}
     </div>
   );
 }
