@@ -1,0 +1,35 @@
+// use prisma-next
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id            String       @id @default(uuid())
+  title         String
+  description   String?
+  status        TaskStatus   @default(PENDING)
+  priority      TaskPriority @default(MEDIUM)
+  startDate     TimestamptzString? @map("start_date")
+  dueDate       TimestamptzString? @map("due_date")
+  endDate       TimestamptzString? @map("end_date")
+  rawVoiceInput String?      @map("raw_voice_input")
+  tags          String[]     @default([])
+  createdAt     TimestamptzString @default(now()) @map("created_at")
+  updatedAt     temporal.updatedAtString() @map("updated_at")
+
+  @@index([status])
+  @@index([dueDate])
+  @@index([createdAt])
+  @@map("tasks")
+}
