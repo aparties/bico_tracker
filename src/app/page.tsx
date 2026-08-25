@@ -33,9 +33,9 @@ export default function Home() {
   return (
     <div className="flex-1 min-h-screen bg-[#0b241c] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/10 via-[#0b241c] to-[#0b241c]">
       {/* Header */}
-      <header className="max-w-7xl mx-auto px-6 pt-12 pb-6 flex flex-col items-center text-center">
+      <header className="max-w-7xl mx-auto px-6 pt-20 pb-4 flex flex-col items-center text-center">
         {/* Logo y Bicode Control Badge */}
-        <div className="flex items-center gap-3 mb-6 bg-[#143028]/80 border border-[#1d4034] rounded-full pl-3 pr-6 py-2 shadow-[0_0_15px_rgba(87,204,153,0.05)]">
+        <div className="flex items-center gap-3 mb-8 bg-[#143028]/80 border border-[#1d4034] rounded-full pl-3 pr-6 py-2 shadow-[0_0_15px_rgba(87,204,153,0.05)]">
           <img src="/logo.png" alt="Bicode Control Logo" className="w-8 h-8 rounded-full object-cover border border-[#1d4034]" />
           <div className="flex flex-col items-start leading-none text-left">
             <span className="text-white font-black text-sm tracking-wide">
@@ -47,19 +47,19 @@ export default function Home() {
           </div>
         </div>
         
-        <h1 className="text-white text-3xl md:text-5xl font-black tracking-tight mb-4">
+        <h1 className="text-white text-3xl md:text-5xl font-black tracking-tight mb-6">
           Bicode Tracker
         </h1>
 
         {/* Fecha de hoy (Perú, GMT-5) */}
         {mounted && (
-          <div className="text-xs text-[#80ed99] bg-[#143028] border border-[#1d4034] rounded-full px-4.5 py-1.5 font-bold mb-5 flex items-center gap-2 shadow-[0_0_12px_rgba(87,204,153,0.03)]">
+          <div className="text-xs text-[#80ed99] bg-[#143028] border border-[#1d4034] rounded-full px-4.5 py-1.5 font-bold mb-7 flex items-center gap-2 shadow-[0_0_12px_rgba(87,204,153,0.03)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#57cc99] animate-pulse" />
             Hoy: {formattedDate} (GMT-5)
           </div>
         )}
         
-        <p className="text-[#a8b5b0] text-sm md:text-base max-w-xl leading-relaxed flex items-center justify-center gap-1.5 mb-6">
+        <p className="text-[#a8b5b0] text-sm md:text-base max-w-xl leading-relaxed flex items-center justify-center gap-1.5 mb-10">
           <Sparkles className="w-4 h-4 text-[#80ed99] flex-shrink-0" />
           Dicta o escribe tus tareas para procesarlas y guardarlas automáticamente con Inteligencia Artificial.
         </p>
@@ -92,7 +92,7 @@ export default function Home() {
       </header>
 
       {/* Entrada Inteligente por Voz / Texto */}
-      <section className="mb-2">
+      <section className="mt-8 mb-14">
         <VoiceInput onTaskCreated={handleTaskCreated} />
       </section>
 
