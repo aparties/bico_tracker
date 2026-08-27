@@ -114,6 +114,8 @@ export default function TaskCalendar() {
     const dayEnd = dayStart + 24 * 60 * 60 * 1000 - 1;
 
     return tasks.filter(task => {
+      if (task.status === 'ARCHIVED') return false;
+
       let match = false;
       if (task.startDate) {
         const start = new Date(task.startDate).getTime();

@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Calendar as CalendarIcon, Sparkles, LayoutGrid } from 'lucide-react';
+import { Calendar as CalendarIcon, Sparkles, LayoutGrid, Archive } from 'lucide-react';
 import VoiceInput from '@/components/VoiceInput';
 import TaskBoard from '@/components/TaskBoard';
 import TaskCalendar from '@/components/TaskCalendar';
+import ArchivedTasks from '@/components/ArchivedTasks';
 
 export default function Home() {
   const queryClient = useQueryClient();
-  const [activeView, setActiveView] = useState<'kanban' | 'calendar'>('kanban');
+  const [activeView, setActiveView] = useState<'kanban' | 'calendar' | 'archived'>('kanban');
   const [mounted, setMounted] = useState(false);
   const [formattedDate, setFormattedDate] = useState('');
 
@@ -88,6 +89,17 @@ export default function Home() {
             <CalendarIcon className="w-4 h-4" />
             Vista Calendario
           </button>
+          <button
+            onClick={() => setActiveView('archived')}
+            className={`px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all ${
+              activeView === 'archived'
+                ? 'bg-[#57cc99] text-[#0b241c] shadow-[0_0_12px_rgba(87,204,153,0.3)]'
+                : 'text-[#a8b5b0] hover:text-white'
+            }`}
+          >
+            <Archive className="w-4 h-4" />
+            Tareas Archivadas
+          </button>
         </div>
       </header>
 
@@ -98,11 +110,9 @@ export default function Home() {
 
       {/* Vistas Principales */}
       <main className="max-w-7xl mx-auto pb-16">
-        {activeView === 'kanban' ? (
-          <TaskBoard />
-        ) : (
-          <TaskCalendar />
-        )}
+        {activeView === 'kanban' && <TaskBoard />}
+        {activeView === 'calendar' && <TaskCalendar />}
+        {activeView === 'archived' && <ArchivedTasks />}
       </main>
     </div>
   );
